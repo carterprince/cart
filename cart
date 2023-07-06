@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+import curses
+import pygame
+import signal
+from pygame import mixer
+from curses import wrapper
+import random
+
+def main(stdscr):
+    mixer.init()  # initializing the mixer
+    music_dir = os.path.expanduser('~/media/music/')
+    songs = [f for f in os.listdir(music_dir) if f.endswith('.mp3')]
+    random.shuffle(songs)
+    current_song_index = 0
+    playing_song_index = None
+    scroll_offset = 0
+    is_paused = False
+
+    curses.start_color()
+    curses.use_default_colors()
+    for i in range(0, curses.COLORS):
+        curses.init_pair(i + 1, i, -1)
+    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)   # for normal songs
+    curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_WHITE)   # for selected song
+    curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)  # for currently playing song
+    curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_WHITE)  # for playing song under cursor
+
+    def redraw_window():
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
+
+        for i, song in enumerate(songs[scroll_offset:scroll_offset + h - 1]):  # Leave one row for the cursor
+            x = 0
+            y = i
+
+            # Truncate song if it doesn't fit within terminal width
+            if len(song) > w - 1:  # Leave one column for the cursor
+                song = song[:w-1]
+
+            if i + scroll_offset == current_song_index and i + scroll_offset == playing_song_index:
+                stdscr.addstr(y, x, song, curses.color_pair(4))
+            elif i + scroll_offset == playing_song_index:
+                stdscr.addstr(y, x, song, curses.color_pair(3))
+            elif i + scroll_offset == current_song_index:
+                stdscr.addstr(y, x, song, curses.color_pair(2))
+            else:
+                stdscr.addstr(y, x, song, curses.color_pair(1))
+
+        stdscr.refresh()
+    
+    def toggle_pause(signo, stack_frame):
+        nonlocal is_paused
+        if is_paused:
+            mixer.music.unpause()
+            is_paused = False
+        else:
+            mixer.music.pause()
+            is_paused = True
+
+    def next_song(signo, stack_frame):
+        nonlocal current_song_index, playing_song_index
+        current_song_index = min(current_song_index + 1, len(songs) - 1)
+        playing_song_index = current_song_index
+        song_path = os.path.join(music_dir, songs[current_song_index])
+        mixer.music.load(song_path)
+        mixer.music.play()
+
+    def prev_song(signo, stack_frame):
+        nonlocal current_song_index, playing_song_index
+        current_song_index = max(current_song_index - 1, 0)
+        playing_song_index = current_song_index
+        song_path = os.path.join(music_dir, songs[current_song_index])
+        mixer.music.load(song_path)
+        mixer.music.play()
+
+    # Listen for SIGRTMIN+10 (34) to toggle pause
+    signal.signal(signal.SIGRTMIN + 10, toggle_pause)
+    # Listen for SIGRTMIN+11 (35) for next song
+    signal.signal(signal.SIGRTMIN + 11, next_song)
+    # Listen for SIGRTMIN+12 (36) for previous song
+    signal.signal(signal.SIGRTMIN + 12, prev_song)
+
+    while True:
+        redraw_window()
+        key = stdscr.getch()
+        
+        if key == ord('j'):
+            current_song_index = min(current_song_index + 1, len(songs) - 1)
+        elif key == ord('k'):
+            current_song_index = max(current_song_index - 1, 0)
+        elif key == ord('\n'):
+            is_paused = False
+            playing_song_index = current_song_index
+            song_path = os.path.join(music_dir, songs[current_song_index])
+            mixer.music.load(song_path)
+            mixer.music.play()
+        elif key == ord(' '):
+            toggle_pause(None, None)
+        elif key == ord('G'):  # Here's the check for Shift+g
+            current_song_index = len(songs) - 1  # Set current_song_index to the last song
+        elif key == ord('g'):
+            current_song_index = 0
+        elif key == ord('q'):
+            break
+
+        # Update scroll offset
+        h, _ = stdscr.getmaxyx()
+        if current_song_index < scroll_offset:
+            scroll_offset = max(0, current_song_index)
+        elif current_song_index >= scroll_offset + h - 1:
+            scroll_offset = min(len(songs) - h + 1, current_song_index - h + 2)
+
+if __name__ == "__main__":
+    wrapper(main)
