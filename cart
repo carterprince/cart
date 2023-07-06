@@ -73,17 +73,22 @@ def main(stdscr):
     def next_song(signo, stack_frame):
         nonlocal playing_song_index
         initialize_mixer()
-        playing_song_index = min(playing_song_index + 1, len(songs) - 1)
+        if playing_song_index is None:
+            playing_song_index = 1
+        else:
+            playing_song_index = min(playing_song_index + 1, len(songs) - 1)
         song_path = os.path.join(music_dir, songs[playing_song_index])
         mixer.music.load(song_path)
         mixer.music.play()
 
     def prev_song(signo, stack_frame):
-        nonlocal current_song_index, playing_song_index
+        nonlocal playing_song_index
         initialize_mixer()
-        current_song_index = max(current_song_index - 1, 0)
-        playing_song_index = current_song_index
-        song_path = os.path.join(music_dir, songs[current_song_index])
+        if playing_song_index is None:
+            playing_song_index = 0
+        else:
+            playing_song_index = max(playing_song_index - 1, 0)
+        song_path = os.path.join(music_dir, songs[playing_song_index])
         mixer.music.load(song_path)
         mixer.music.play()
 
