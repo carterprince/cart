@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Function to display help message
+function display_help() {
+    echo "Usage: cartctl [command]"
+    echo
+    echo "Commands:"
+    echo "  play      - Start playing the current song"
+    echo "  pause     - Pause the current song"
+    echo "  toggle    - Toggle between play and pause"
+    echo "  next      - Go to the next song"
+    echo "  previous  - Go to the previous song"
+    echo "  stop      - Stop the current song"
+}
+
+# Function to send signal to the player
+function send_signal() {
+    PID=$(pgrep -f cart$ | tail -1)
+    if [ -n "$PID" ]; then
+        kill -$1 $PID
+    else
+        echo "No running instance of 'cart' found"
+    fi
+}
+
+# Check if any argument is given
+if [ $# -eq 0 ]; then
+    display_help
+    exit 1
+fi
+
+# Process commands
+case $1 in
+    play)
+        send_signal 42
+        ;;
+    pause)
+        send_signal 43
+        ;;
+    toggle)
+        send_signal 44
+        ;;
+    next)
+        send_signal 45
+        ;;
+    prev)
+        send_signal 46
+        ;;
+    stop)
+        send_signal 47
+        ;;
+    *)
+        echo "Unknown command: $1"
+        display_help
+        exit 1
+        ;;
+esac
