@@ -71,11 +71,10 @@ def main(stdscr):
             is_paused = True
 
     def next_song(signo, stack_frame):
-        nonlocal current_song_index, playing_song_index
+        nonlocal playing_song_index
         initialize_mixer()
-        current_song_index = min(current_song_index + 1, len(songs) - 1)
-        playing_song_index = current_song_index
-        song_path = os.path.join(music_dir, songs[current_song_index])
+        playing_song_index = min(playing_song_index + 1, len(songs) - 1)
+        song_path = os.path.join(music_dir, songs[playing_song_index])
         mixer.music.load(song_path)
         mixer.music.play()
 
@@ -94,9 +93,6 @@ def main(stdscr):
 
     while True:
         redraw_window()
-        end = timeit.default_timer()
-        with open('/tmp/cart.log', 'a') as f:
-            f.write(str(end - start) + '\n')
         key = stdscr.getch()
 
         if key == ord('j'):
