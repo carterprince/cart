@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 
+import sys
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import curses
-import pygame
-import signal
-from pygame import mixer
 from curses import wrapper
 import random
+import signal
+
+mixer = None
 
 def main(stdscr):
-    mixer.init()
+
     music_dir = os.path.expanduser('~/media/music/')
-    songs = [f for f in os.listdir(music_dir) if f.endswith('.mp3')]
+    songs = [song for song in os.listdir(music_dir)]
     random.shuffle(songs)
     current_song_index = 0
     playing_song_index = None
     scroll_offset = 0
     is_paused = False
+    is_initialized = False
 
     curses.start_color()
     curses.use_default_colors()
@@ -49,9 +51,18 @@ def main(stdscr):
                 stdscr.addstr(y, x, song, curses.color_pair(1))
 
         stdscr.refresh()
-    
+
+    def initialize_mixer():
+        nonlocal is_initialized
+        if is_initialized: return
+        global mixer
+        from pygame import mixer
+        mixer.init()
+        is_initialized = True
+
     def toggle_pause(signo, stack_frame):
         nonlocal is_paused
+        initialize_mixer()
         if is_paused:
             mixer.music.unpause()
             is_paused = False
@@ -61,6 +72,7 @@ def main(stdscr):
 
     def next_song(signo, stack_frame):
         nonlocal current_song_index, playing_song_index
+        initialize_mixer()
         current_song_index = min(current_song_index + 1, len(songs) - 1)
         playing_song_index = current_song_index
         song_path = os.path.join(music_dir, songs[current_song_index])
@@ -69,6 +81,7 @@ def main(stdscr):
 
     def prev_song(signo, stack_frame):
         nonlocal current_song_index, playing_song_index
+        initialize_mixer()
         current_song_index = max(current_song_index - 1, 0)
         playing_song_index = current_song_index
         song_path = os.path.join(music_dir, songs[current_song_index])
@@ -81,8 +94,11 @@ def main(stdscr):
 
     while True:
         redraw_window()
+        end = timeit.default_timer()
+        with open('/tmp/cart.log', 'a') as f:
+            f.write(str(end - start) + '\n')
         key = stdscr.getch()
-        
+
         if key == ord('j'):
             current_song_index = min(current_song_index + 1, len(songs) - 1)
         elif key == ord('k'):
@@ -91,6 +107,7 @@ def main(stdscr):
             is_paused = False
             playing_song_index = current_song_index
             song_path = os.path.join(music_dir, songs[current_song_index])
+            initialize_mixer()
             mixer.music.load(song_path)
             mixer.music.play()
         elif key == ord(' '):
