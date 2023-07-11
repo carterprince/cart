@@ -13,7 +13,7 @@ mixer = None
 def main(stdscr):
 
     music_dir = os.path.expanduser('~/media/music/')
-    songs = [song for song in os.listdir(music_dir)]
+    songs = [song[:-4] for song in os.listdir(music_dir)]
     random.shuffle(songs)
     current_song_index = 0
     playing_song_index = None
@@ -31,12 +31,14 @@ def main(stdscr):
     curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_WHITE)
 
     def redraw_window():
-        stdscr.clear()
         height, width = stdscr.getmaxyx()
 
-        for i, song in enumerate(songs[scroll_offset:scroll_offset + height - 1]):
+        for i, song in enumerate(songs[scroll_offset:scroll_offset + height]):
             x = 0
             y = i
+
+            if y >= height:
+                break
 
             if len(song) > width - 1:
                 song = song[:width-1]
@@ -49,6 +51,8 @@ def main(stdscr):
                 stdscr.addstr(y, x, song, curses.color_pair(2))
             else:
                 stdscr.addstr(y, x, song, curses.color_pair(1))
+
+            stdscr.clrtoeol()
 
         stdscr.refresh()
 
@@ -92,9 +96,9 @@ def main(stdscr):
         mixer.music.load(song_path)
         mixer.music.play()
 
-    signal.signal(signal.SIGRTMIN + 10, toggle_pause)
-    signal.signal(signal.SIGRTMIN + 11, next_song)
-    signal.signal(signal.SIGRTMIN + 12, prev_song)
+    signal.signal(signal.SIGRTMIN + 10, next_song)
+    signal.signal(signal.SIGRTMIN + 11, prev_song)
+    signal.signal(signal.SIGRTMIN + 12, toggle_pause)
 
     while True:
         redraw_window()
@@ -109,7 +113,7 @@ def main(stdscr):
             playing_song_index = current_song_index
             song_path = os.path.join(music_dir, songs[current_song_index])
             initialize_mixer()
-            mixer.music.load(song_path)
+            mixer.music.load(song_path + '.mp3')
             mixer.music.play()
         elif key == ord(' '):
             toggle_pause(None, None)
@@ -123,8 +127,8 @@ def main(stdscr):
         height, _ = stdscr.getmaxyx()
         if current_song_index < scroll_offset:
             scroll_offset = max(0, current_song_index)
-        elif current_song_index >= scroll_offset + height - 1:
-            scroll_offset = min(len(songs) - height + 1, current_song_index - height + 2)
+        elif current_song_index >= scroll_offset + height:
+            scroll_offset = min(len(songs) - height, current_song_index - height + 1)
 
 if __name__ == "__main__":
     wrapper(main)
