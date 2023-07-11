@@ -82,6 +82,7 @@ def main(stdscr):
         else:
             playing_song_index = min(playing_song_index + 1, len(songs) - 1)
         song_path = os.path.join(music_dir, songs[playing_song_index])
+        song_path += ".mp3"
         mixer.music.load(song_path)
         mixer.music.play()
 
@@ -93,6 +94,7 @@ def main(stdscr):
         else:
             playing_song_index = max(playing_song_index - 1, 0)
         song_path = os.path.join(music_dir, songs[playing_song_index])
+        song_path += ".mp3"
         mixer.music.load(song_path)
         mixer.music.play()
 
@@ -112,8 +114,9 @@ def main(stdscr):
             is_paused = False
             playing_song_index = current_song_index
             song_path = os.path.join(music_dir, songs[current_song_index])
+            song_path += ".mp3"
             initialize_mixer()
-            mixer.music.load(song_path + '.mp3')
+            mixer.music.load(song_path)
             mixer.music.play()
         elif key == ord(' '):
             toggle_pause(None, None)
