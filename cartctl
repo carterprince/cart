@@ -31,24 +31,15 @@ fi
 
 # Process commands
 case $1 in
-    play)
-        send_signal 42
-        ;;
-    pause)
-        send_signal 43
-        ;;
-    toggle)
+    next) # SIGRTMIN+10
         send_signal 44
         ;;
-    next)
-        send_signal 45
-        ;;
-    prev)
-        send_signal 46
-        ;;
-    stop)
-        send_signal 47
-        ;;
+	prev) # SIGRTMIN+11
+		send_signal 45
+		;;
+	pause) # SIGRTMIN+12
+		send_signal 46
+		;;
     *)
         echo "Unknown command: $1"
         display_help
