@@ -98,6 +98,12 @@ def main(stdscr):
         mixer.music.load(song_path)
         mixer.music.play()
 
+    def check_end_and_play_next():
+        nonlocal playing_song_index
+        initialize_mixer()
+        if not mixer.music.get_busy():
+            next_song(None, None)
+
     signal.signal(signal.SIGRTMIN + 10, next_song)
     signal.signal(signal.SIGRTMIN + 11, prev_song)
     signal.signal(signal.SIGRTMIN + 12, toggle_pause)
@@ -132,6 +138,8 @@ def main(stdscr):
             scroll_offset = max(0, current_song_index)
         elif current_song_index >= scroll_offset + height:
             scroll_offset = min(len(songs) - height, current_song_index - height + 1)
+
+        check_end_and_play_next()
 
 if __name__ == "__main__":
     wrapper(main)
